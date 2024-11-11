@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <title>Chat Room</title>
+  <style>
+
+
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #e5e5ea;
+      font-family: Arial, sans-serif;
+      margin: 0;
+    }
+    #statusElement {
+      font-size: 1em;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .chat-container {
+      width: 100%;
+      height: 500px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; 
+      margin-top:55px;
+
+    }
+
+    .chat-box {
+      flex-grow: 1;
+      overflow-y: auto; 
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden; 
+    }
+
+    .message-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin: 8px 0;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 10px 15px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
+      word-wrap: break-word; 
+    }
+
+    .message.received {
+      background-color: #f0f0f0;
+      align-self: flex-start;
+      border-top-left-radius: 5px;
+    }
+
+    .message.sent {
+      background-color: #007aff;
+      color: white;
+      align-self: flex-end;
+      border-top-right-radius: 5px;
+    }
+
+    .date-separator {
+      text-align: center;
+      font-size: 14px;
+      color: #a0a0a0;
+      margin: 10px 0;
+    }
+
+    .timestamp {
+      font-size: 12px;
+      color: #a0a0a0;
+      margin-top: 5px;
+    }
+
+    .message-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+    }
+
+    .message.received .timestamp {
+      text-align: left;
+      margin-top: 5px;
+    }
+
+    .message.sent .timestamp {
+      text-align: right;
+      margin-top: 5px;
+    }
+
+    .input-container {
+      display: flex;
+      align-items: center;
+      border-top: 1px solid #ddd;
+      padding: 10px;
+    }
+
+    .input-container textarea {
+      flex-grow: 1;
+      padding: 8px;
+      font-size: 15px;
+      border: 1px solid #ddd;
+      border-radius: 18px;
+      outline: none;
+      resize: none;
+      overflow: hidden;
+      max-height: 150px;
+    }
+
+    .input-container button {
+      background-color: #007aff;
+      color: white;
+      padding: 8px 15px;
+      font-size: 15px;
+      border: none;
+      border-radius: 18px;
+      margin-left: 8px;
+      cursor: pointer;
+    }
+
+    .input-container button:hover {
+      background-color: #0062cc;
+    }
+
+    .file-input-container {
+      position: relative;
+      margin-right: 8px;
+    }
+
+    .file-input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+    }
+
+    .file-input-icon {
+      font-size: 24px;
+      color: #007aff;
+      cursor: pointer;
+    }
+    .top-right {
+    position: fixed;
+    top: 0;
+    text-align: right;
+    margin-right: 10px;
+    width: 100%;
+    background-color: #f1f1f1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+    z-index: 1000; 
+}
+
+.top-center {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+}
+#closeButton{
+  display: none;
+  
+}
+
+#user_connection_status{
+  font-weight: bold;
+
+}
+
+#loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgb(255, 255, 255, 1);
+      color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5em;
+      z-index: 1000;
+      display: none; 
+    }
+  </style>
+</head>
+
+
+
+
+<body>
+  <div id="loading-overlay">
+    Loading & decrypting messages, please wait...
+  </div>
+  <div class="top-right">
+    <p>status: <span id="statusElement"></span></p>
+    <button id="closeButton">Reconnect</button>
+
+  </div>
+  <div class="top-center">
+    <p>Chatting with <span id="usernameElement"></span>: <span id="user_connection_status"></span></p>
+
+  </div>
+  <div class="chat-container"> 
+
+    <div class="chat-box" id="chatBox">
+      <!-- Messages will be dynamically inserted here -->
+    </div>
+    <div class="typing-animation" id="user_typing" style="display: none; margin-left:10px;"></div>
+    <div id="input-container-id" class="input-container">
+      <div class="file-input-container">
+        <input type="file" class="file-input" id="fileInput" accept=".txt">
+        <span class="file-input-icon">&#128206;</span> <!-- Paper clip icon -->
+      </div>
+      <textarea id="messageInput" placeholder="Type a message..."></textarea>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { API_URL , WS_URL} from '../js/config.js';
+    window.API_URL = API_URL;
+    window.WS_URL = WS_URL;
+</script>
+
+  <script>
+
+    
+
+
+
+    let friend_data = null;
+    let real_friend_name = null;
+    let chatroom_id = null;
+    let friend_public_key = null;
+    let s_key = null;
+    let socket = null; 
+    let messagesData = null;
+    let newMessageData = [];
+    let currentUser = null;
+    let my_private = null
+    let connectedUsers = [];
+    let user_id = null;
+    let messages_loaded = false;
+
+    window.api.onChatroomData(async (event, { friend, realFriendName, chatroomId, friendPublicKey, sk }) => {
+      
+      usernameElement.textContent = realFriendName;
+      friend_data = friend;
+      real_friend_name = realFriendName;
+      chatroom_id = chatroomId;
+      friend_public_key = friendPublicKey;
+      s_key = sk;
+
+      user_id = await window.api.getUserId();
+      currentUser = await window.api.getUserName();
+      my_private = await window.api.getUserPrivate();
+
+      document.getElementById('closeButton').addEventListener('click', () => {
+          window.api.openChatroomWindow(friend, real_friend_name, chatroom_id, friend_public_key, sk);
+
+          window.close();
+
+        });
+
+      connect_websocket()
+      .then(() => get_messages_from_db())
+      .then(() => {
+          //console.log('Calling loadMessages with s_key:', s_key); // Log before calling loadMessages
+          loadMessages();
+      })
+
+
+
+
+      document.getElementById('fileInput').addEventListener('change', async function(event) {
+      const user_token = await window.api.getUserToken();
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0]; // Get the first selected file
+
+      if (!file) {
+        return;
+      }
+
+      if (file.type !== 'text/plain') {
+            alert('Please select a .txt file.');
+            fileInput.value = '';
+            return;
+        }
+
+
+        // Check if the file size is less than or equal to 5 MB (5 * 1024 * 1024 bytes)
+        const maxSizeInBytes = 5 * 1024 * 1024;
+        if (file.size > maxSizeInBytes) {
+            alert('File size must be less than or equal to 5 MB.');
+            fileInput.value = ''; 
+            return;
+        }
+
+
+      const reader = new FileReader();
+
+      reader.onload = async function(e) {
+        const binaryData = new Uint8Array(e.target.result); // Convert ArrayBuffer to Uint8Array
+        const dataString = Array.from(binaryData).join(",");
+
+          try {
+              const {ciphertext, iv} = await window.api.encryptData(dataString, s_key);
+              //console.log(`Encrypted Data: ${JSON.stringify(ciphertext)}`);
+          
+              const jsonObject = {
+              file: JSON.stringify(ciphertext),
+              fileName: file.name,
+              chatroom_id: chatroom_id,
+              message_type: "new_upload",
+              iv: JSON.stringify(iv),
+              // signature: 
+            };
+
+              // can add verification here to see if it was ACK'd
+              await socket.send(JSON.stringify(jsonObject));
+
+          
+            } catch (error) {
+              //console.error('Encryption failed:', error);
+          }
+
+
+
+
+
+      };
+
+      reader.readAsArrayBuffer(file);  
+    })
+
+
+      // if socket is null still we will display connection to server failed
+      const messageInput = document.getElementById('messageInput');
+      let typingTimeout; // For detecting inactivity
+      let isTyping = false; // Track if typing indicator is active
+
+      // Function to send "user_typing" payload
+      function sendTypingPayload() {
+          if (!isTyping) {
+              const payload = {
+                  message_type: 'user_typing',
+              };
+              socket.send(JSON.stringify(payload));
+              //console.log("sent this typing:", JSON.stringify(payload));
+              isTyping = true; // Mark typing indicator as active
+          }
+      }
+
+      // Function to send "user_stopped_typing" payload
+      function sendStoppedTypingPayload() {
+          const payload = {
+              message_type: 'user_stopped_typing',
+          };
+          socket.send(JSON.stringify(payload));
+          //console.log("sent this stopped typing:", JSON.stringify(payload));
+          isTyping = false; // Reset typing indicator
+      }
+
+      // Event listener for input with debounce
+      messageInput.addEventListener('input', function() {
+          sendTypingPayload();
+
+          clearTimeout(typingTimeout);
+
+          typingTimeout = setTimeout(() => {
+              sendStoppedTypingPayload();
+          }, 2000); 
+      });
+
+
+      
+      const updateUserStatus = async () => {
+        //console.log(connectedUsers)
+
+        if (connectedUsers.length === 2) {
+          user_connection_status.textContent = "online";
+          user_connection_status.style.color = "green";
+        } else {
+          const time_ago = await get_user_last_online();
+          if (time_ago === null){
+            user_connection_status.textContent = `Offline`;
+          }else{
+            user_connection_status.textContent = `Last seen ${time_ago}`;
+          }
+          user_connection_status.style.color = "grey";
+
+        }
+    };
+
+        updateUserStatus();
+
+
+        function timeAgo(timestamp) {
+          const now = new Date();
+          const past = new Date(timestamp);
+          const seconds = Math.floor((now - past) / 1000);
+
+          let interval = Math.floor(seconds / 31536000);
+          if (interval >= 1) return interval + " year" + (interval > 1 ? "s" : "") + " ago";
+
+          interval = Math.floor(seconds / 2592000);
+          if (interval >= 1) return interval + " month" + (interval > 1 ? "s" : "") + " ago";
+
+          interval = Math.floor(seconds / 604800);
+          if (interval >= 1) return interval + " week" + (interval > 1 ? "s" : "") + " ago";
+
+          interval = Math.floor(seconds / 86400);
+          if (interval >= 1) return interval + " day" + (interval > 1 ? "s" : "") + " ago";
+
+          interval = Math.floor(seconds / 3600);
+          if (interval >= 1) return interval + " hour" + (interval > 1 ? "s" : "") + " ago";
+
+          interval = Math.floor(seconds / 60);
+          if (interval >= 1) return interval + " minute" + (interval > 1 ? "s" : "") + " ago";
+
+          return seconds + " second" + (seconds > 1 ? "s" : "") + " ago";
+        }
+
+        async function get_user_last_online(){
+          const user_token = await window.api.getUserToken();
+          
+          const response = await fetch(`${API_URL}/get_users_last_online/`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', "Authorization" : `Token ${user_token}`},
+              body: JSON.stringify({ "user_to_get" : realFriendName, "chatroom_id" : chatroomId }), // automatically does "username" : username ... and converts to string
+          });
+
+          const data = await response.json();
+          const user_last_online_time = data.last_online;
+          if (user_last_online_time === null){
+            return null;
+          }else{
+            const time_ago = await timeAgo(user_last_online_time)
+            return time_ago;
+          }
+
+
+        }
+      
+
+
+    async function connect_websocket(){
+      try {
+        const user_token = await window.api.getUserToken();
+
+        if (!chatroom_id || !window.WS_URL) {
+          throw new Error('chatroom_id or WS_URL is not defined');
+          return;
+        }
+
+        socket = new WebSocket(`${window.WS_URL}/chat/${chatroom_id}/?token=${user_token}`);
+        
+        
+        socket.addEventListener('open', (event) => {
+          //console.log('Connected to WebSocket server');
+          statusElement.textContent = 'Connected';
+          statusElement.style.color = 'green';
+        });
+
+        socket.addEventListener('message', async (event) => {
+          const data = JSON.parse(event.data);
+          //console.log('Message from server:', data);
+
+          if (data.message_type === "new_message") {
+            //console.log(my_private);
+            const ivBuffer = await window.api.convertIVToBuffer(data.iv);
+            const decryptedMessage = await window.api.decryptMessageUsingSK(data.encrypted_message, s_key, ivBuffer);
+            const verifySignature = await window.api.verifyMessage(decryptedMessage, data.message_signature, friend_public_key) ;
+            //console.log("decrypted message", decryptedMessage)
+           
+            if (verifySignature === true){
+              const newMessage = {
+              senderUsername: real_friend_name,
+              content: decryptedMessage,
+              timestamp: new Date().toISOString(),
+              iv: data.iv
+              };
+                appendMessage(newMessage)
+
+            }else{
+              const newMessage = {
+                senderUsername: real_friend_name,
+                content: "message recieved signature returned false (integrity check failed)",
+                timestamp: new Date().toISOString()
+              };
+            messagesData.push(newMessage);
+            loadMessages();
+            //console.log('Message from server:', event.data);
+
+          }
+          } else if (data.message_type === "user_typing_message"){
+            const typingIndicator = document.getElementById('user_typing');
+            typingIndicator.innerText = `${realFriendName} is typing...`
+            typingIndicator.style.display = 'block';
+
+
+          } else if (data.message_type === "user_stopped_typing_message"){
+            // remove typing animation
+            const typingIndicator = document.getElementById('user_typing');
+            typingIndicator.style.display = 'none';
+
+          } else if (data.message_type === "user_joined"){
+            connectedUsers = data.connected_users;
+            updateUserStatus();
+
+          } else if (data.message_type == "user_disconnected"){
+            connectedUsers = data.connected_users;
+            updateUserStatus();
+
+
+          } else if (data.message_type == "new_upload"){
+            //console.log("file recieved", data);
+            // should check if signature is valid
+            const formatted_data = {
+              "message_type": "new_upload",
+              "encrypted_file_path": data["encrypted_file_path"],
+              "file_signature": data["file_signature"],
+              "file_name": data["file_name"],
+              "iv": data["file_iv"],
+              "timestamp": new Date().toISOString(),
+              "senderUsername": data["senderUsername"]
+            }
+            appendFileMessage(formatted_data);
+          }
+
+        });
+
+
+        
+        socket.addEventListener('close', (event) => {
+          //console.log('Disconnected from WebSocket server');
+          statusElement.textContent = 'Disconnected';
+          statusElement.style.color = 'red';
+          statusElement.style.textAlign = 'center';
+          document.getElementById('closeButton').style.display = 'block';
+
+          
+
+        });
+
+        socket.addEventListener('error', (event) => {
+          //console.error('WebSocket error:', event);
+          statusElement.textContent = 'Failed';
+          statusElement.style.color = 'red';
+          statusElement.style.textAlign = 'center';
+          document.getElementById('closeButton').style.display = 'block';
+
+
+
+        });
+
+      } catch (error) {
+        statusElement.textContent = 'WS connection failed';
+        statusElement.style.color = 'red';
+
+      }
+    }
+
+
+
+    async function get_messages_from_db(){
+        const user_token = await window.api.getUserToken();
+
+        try {
+        const response = await fetch(`${window.API_URL}/get_messages_from_db/`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                "Authorization": `Token ${user_token}` 
+            },
+            body : JSON.stringify({
+              
+              "chatroom_id" : chatroom_id
+            })
+            });
+
+
+        if(!response.ok){
+            return null;
+        }
+
+        messagesData = await response.json();
+        //console.log(messagesData);
+
+      } catch (error) {
+        //console.error('Error fetching pending friends:', error);
+      }
+    }
+
+
+
+
+
+
+      
+    })
+    
+
+    function formatDate(isoString) {
+      const date = new Date(isoString);
+      const options = { month: 'long', day: 'numeric' };
+      return date.toLocaleDateString('en-US', options);
+    }
+
+    function formatTime(isoString) {
+      const date = new Date(isoString);
+      const options = { hour: 'numeric', minute: 'numeric', hour12: true };
+      return date.toLocaleTimeString('en-US', options);
+    }
+
+
+
+
+async function loadMessages() {
+  if (!messages_loaded) {
+    document.getElementById('loading-overlay').style.display = 'flex';
+  }
+  const chatBox = document.getElementById('chatBox');
+  chatBox.innerHTML = ''; // Clear existing messages
+
+  let lastDate = '';
+  let lastTime = '';
+  let messageGroup = null;
+
+  //console.log("messagesData:", messagesData);
+
+  for (const [index, message] of messagesData.entries()) {
+    if (message.isFile !== true){
+
+      const messageDate = formatDate(message.timestamp);
+      const messageTime = formatTime(message.timestamp);
+
+      if (messageDate !== lastDate) {
+        const dateSeparator = document.createElement('div');
+        dateSeparator.classList.add('date-separator');
+        dateSeparator.innerText = `--- ${messageDate} ---`;
+        chatBox.appendChild(dateSeparator);
+        lastDate = messageDate;
+        lastTime = '';
+      }
+
+      if (!messageGroup || messageTime !== lastTime || message.senderUsername !== messagesData[index - 1]?.senderUsername) {
+        if (messageGroup) {
+          const timeElement = document.createElement('div');
+          timeElement.classList.add('timestamp');
+          timeElement.innerText = lastTime;
+          messageGroup.appendChild(timeElement);
+          chatBox.appendChild(messageGroup);
+        }
+
+        messageGroup = document.createElement('div');
+        messageGroup.classList.add('message-group');
+        lastTime = messageTime;
+      }
+
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message');
+
+      const ivBuffer = await window.api.convertIVToBuffer(message.iv);
+      const decryptedMessage = await window.api.decryptMessageUsingSK(message.content, s_key, ivBuffer);
+      messageElement.innerText = decryptedMessage;
+
+      //console.log("current user:", currentUser);
+      if (message.senderUsername === currentUser) {
+        messageElement.classList.add('sent');
+        messageGroup.style.alignItems = 'flex-end';
+      } else {
+        messageElement.classList.add('received');
+        messageGroup.style.alignItems = 'flex-start';
+      }
+
+      messageGroup.appendChild(messageElement);
+
+      // If it's the last message or the next message is from a different sender or at a different time, add the timestamp
+      if (index === messagesData.length - 1 || message.senderUsername !== messagesData[index + 1]?.senderUsername || formatTime(messagesData[index + 1]?.timestamp) !== messageTime) {
+        const timeElement = document.createElement('div');
+        timeElement.classList.add('timestamp');
+        timeElement.innerText = messageTime;
+        messageGroup.appendChild(timeElement);
+        chatBox.appendChild(messageGroup);
+        messageGroup = null; // Reset message group
+      }
+    }else{
+    const messageDate = formatDate(message.timestamp);
+    const messageTime = formatTime(message.timestamp);
+
+      if (messageDate !== lastDate) {
+        const dateSeparator = document.createElement('div');
+        dateSeparator.classList.add('date-separator');
+        dateSeparator.innerText = `--- ${messageDate} ---`;
+        chatBox.appendChild(dateSeparator);
+        lastDate = messageDate;
+        lastTime = '';
+      }
+
+      if (!messageGroup || messageTime !== lastTime || message.senderUsername !== messagesData[index - 1]?.senderUsername) {
+        if (messageGroup) {
+          const timeElement = document.createElement('div');
+          timeElement.classList.add('timestamp');
+          timeElement.innerText = lastTime;
+          messageGroup.appendChild(timeElement);
+          chatBox.appendChild(messageGroup);
+        }
+
+        messageGroup = document.createElement('div');
+        messageGroup.classList.add('message-group');
+        lastTime = messageTime;
+      }
+
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message');
+
+      messageElement.innerText = message.fileName;
+
+      const downloadButton = document.createElement('button');
+      downloadButton.classList.add('download-button');
+      downloadButton.innerHTML = '<i class="fas fa-download"></i>'; // Font Awesome download icon
+      downloadButton.style.marginLeft = "10px";
+
+      downloadButton.addEventListener('click', async () => {
+        const fileData = await downloadFile(message.fileData, message.iv);
+      });
+
+      messageElement.appendChild(downloadButton);
+
+
+
+      //console.log("current user:", currentUser);
+      if (message.senderUsername === currentUser) {
+        messageElement.classList.add('sent');
+        messageGroup.style.alignItems = 'flex-end';
+      } else {
+        messageElement.classList.add('received');
+        messageGroup.style.alignItems = 'flex-start';
+      }
+
+      messageGroup.appendChild(messageElement);
+
+      // If it's the last message or the next message is from a different sender or at a different time, add the timestamp
+      if (index === messagesData.length - 1 || message.senderUsername !== messagesData[index + 1]?.senderUsername || formatTime(messagesData[index + 1]?.timestamp) !== messageTime) {
+        const timeElement = document.createElement('div');
+        timeElement.classList.add('timestamp');
+        timeElement.innerText = messageTime;
+        messageGroup.appendChild(timeElement);
+        chatBox.appendChild(messageGroup);
+        messageGroup = null;
+      }
+    }
+
+
+    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+    }
+    messages_loaded = true;
+    document.getElementById('loading-overlay').style.display = 'none';
+
+
+    
+  }
+
+    const messageInput = document.getElementById('messageInput');
+
+    messageInput.addEventListener('input', function() {
+      messageInput.style.height = 'auto'; // Reset height to auto
+      messageInput.style.height = messageInput.scrollHeight + 'px'; // Set new height based on scroll height
+    });
+
+
+    async function appendMessage(message) {
+    const chatBox = document.getElementById('chatBox');
+    const messageDate = formatDate(message.timestamp);
+    const messageTime = formatTime(message.timestamp);
+    
+    let dateSeparator = document.querySelector(`.date-separator[data-date="${messageDate}"]`);
+    if (!dateSeparator) {
+        dateSeparator = document.createElement('div');
+        dateSeparator.classList.add('date-separator');
+        dateSeparator.dataset.date = messageDate; // Use data attribute to identify
+        dateSeparator.innerText = `--- ${messageDate} ---`;
+        chatBox.appendChild(dateSeparator);
+    }
+
+    
+    
+    const messageGroup = document.createElement('div');
+    messageGroup.classList.add('message-group');
+
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message');
+    messageElement.innerText = message.content;
+
+    if (message.senderUsername === currentUser) {
+        messageElement.classList.add('sent');
+        messageGroup.style.alignItems = 'flex-end';
+    } else {
+        messageElement.classList.add('received');
+        messageGroup.style.alignItems = 'flex-start';
+    }
+    
+    messageGroup.appendChild(messageElement);
+    
+    // Check if we need to add the timestamp
+    const lastMessage = newMessageData[newMessageData.length - 1];
+    // const lastMessageTime = formatTime(lastMessage.timestamp);
+    
+    // this doesnt work correctly yet
+    // issues: Creates already made -- date -- and adds time on every message
+    // solution to implemnt: make array similar to loadmessages and use that to check last message time, etc.
+    if (!lastMessage || null !== messageTime || 
+        lastMessage.innerText !== messageTime) {
+        const timeElement = document.createElement('div');
+        timeElement.classList.add('timestamp');
+        timeElement.innerText = messageTime;
+        messageGroup.appendChild(timeElement);
+    }
+    
+    chatBox.appendChild(messageGroup);
+    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+    
+  }
+    
+
+  async function appendFileMessage(message) {
+    const chatBox = document.getElementById('chatBox');
+    const messageDate = formatDate(message.timestamp);
+    const messageTime = formatTime(message.timestamp);
+    
+    let dateSeparator = document.querySelector(`.date-separator[data-date="${messageDate}"]`);
+    if (!dateSeparator) {
+        dateSeparator = document.createElement('div');
+        dateSeparator.classList.add('date-separator');
+        dateSeparator.dataset.date = messageDate; // Use data attribute to identify
+        dateSeparator.innerText = `--- ${messageDate} ---`;
+        chatBox.appendChild(dateSeparator);
+    }
+
+    
+    
+    const messageGroup = document.createElement('div');
+    messageGroup.classList.add('message-group');
+
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message');
+    messageElement.innerText = message.file_name;
+
+
+        // Create download button
+      const downloadButton = document.createElement('button');
+      downloadButton.classList.add('download-button');
+      downloadButton.innerHTML = '<i class="fas fa-download"></i>'; // Font Awesome download icon
+      downloadButton.style.marginLeft = "10px";
+
+      downloadButton.addEventListener('click', async () => {
+        const fileData = await downloadFile("/media/" + message.encrypted_file_path, message.iv);
+      });
+
+      messageElement.appendChild(downloadButton);
+
+    if (message.senderUsername === currentUser) {
+        messageElement.classList.add('sent');
+        messageGroup.style.alignItems = 'flex-end';
+    } else {
+        messageElement.classList.add('received');
+        messageGroup.style.alignItems = 'flex-start';
+    }
+
+
+    messageGroup.appendChild(messageElement);
+    
+    // Check if we need to add the timestamp
+    const lastMessage = newMessageData[newMessageData.length - 1];
+    
+    // this doesnt work correctly yet
+    // issues: Creates already made -- date -- and adds time on every message
+    // solution to implemnt: make array similar to loadmessages and use that to check last message time, etc.
+    if (!lastMessage || null !== messageTime || 
+        lastMessage.innerText !== messageTime) {
+        const timeElement = document.createElement('div');
+        timeElement.classList.add('timestamp');
+        timeElement.innerText = messageTime;
+        messageGroup.appendChild(timeElement);
+    }
+    
+    chatBox.appendChild(messageGroup);
+    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+    
+  }
+
+
+  async function downloadFile(filePath, message_iv){
+    const user_token = await window.api.getUserToken();
+    const response = await fetch(`${API_URL}${filePath}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json', "Authorization" : `Token ${user_token}`},
+    });
+
+    if (!response.ok){
+      return null;
+    }else{
+
+      
+    const blob = await response.blob(); // Gets binary data from a URL
+    const base64Text = await blob.text();
+    
+    const decryptedData64 = await window.api.decryptData(base64Text, s_key, message_iv);
+    const decryptedData = atob(decryptedData64);
+    const textBlob = new Blob([decryptedData], { type: 'text/plain' });
+
+    // asks for save location:
+    const url = window.URL.createObjectURL(textBlob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filePath.split('/').pop(); // Extract the file name from the file path
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  }
+
+    async function sendMessage() {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+          const messageInput = document.getElementById('messageInput');
+            
+          if (messageInput.value.trim() === ""){
+            return;
+          }
+
+        const message = messageInput.value;
+        const encryptedMessage = await window.api.encryptMessageUsingSK(message, s_key);
+         
+         const privateKey = await window.api.getUserPrivate();
+         const messageSignature = await window.api.signMessage(message, privateKey)
+
+         const payload = {"message_type" : "new_message", "encrypted_message" : encryptedMessage.encryptedData, "message_signature" : messageSignature, "iv" : encryptedMessage.iv}
+
+          const jsonPayload = JSON.stringify(payload);
+
+          socket.send(jsonPayload);
+          socket.send(JSON.stringify({"message_type": 'user_stopped_typing'}));
+          isTyping = false; // Reset typing indicator
+
+          //console.log('Message sent:', jsonPayload);
+
+          const newMessage = {
+            senderUsername: currentUser,
+            content: message,
+            iv: encryptedMessage.iv,
+            timestamp: new Date().toISOString()
+          };
+
+
+
+          newMessageData.push(newMessage);
+          appendMessage(newMessage);
+
+          
+          messageInput.style.height = 'auto'; // Reset height
+          messageInput.value = ''; // Clear input after sending
+
+          return true;
+          } else {
+            return false;
+          //console.error('WebSocket is not open. Ready state:', socket.readyState);
+        }
+
+
+
+    }
+
+    // enter key
+    document.getElementById('messageInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault(); 
+        sendMessage();
+      }
+    });
+
+
+  </script>
+</body>
+</html>

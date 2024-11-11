@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pending Friend Requests</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif; 
+    }
+    h1 {
+      margin-bottom: 20px; 
+      color: #333; 
+    }
+    .container {
+      background-color: white; 
+      padding: 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+      width: 300px; 
+      max-height: 400px; 
+      overflow-y: auto; 
+    }
+    .friend {
+      display: flex; 
+      justify-content: space-between; 
+      padding: 10px; 
+      border-bottom: 1px solid #ccc; 
+      color: #555; 
+    }
+    .friend:last-child {
+      border-bottom: none; 
+    }
+    .button {
+      border: none; 
+      border-radius: 5px; 
+      padding: 5px 10px; 
+      cursor: pointer; 
+      font-size: 16px; 
+    }
+    .accept {
+      background-color: #28a745; 
+      color: white; 
+    }
+    .decline {
+      background-color: #dc3545; 
+      color: white; 
+    }
+  </style>
+</head>
+<body>
+  <h1>Friends</h1>
+  <div class="container" id="friendsContainer">
+    <div class="friend">
+
+    </div>
+  </div>
+  <script type="module">
+    import { API_URL , WS_URL} from '../js/config.js';
+    window.API_URL = API_URL;
+    window.WS_URL = WS_URL;
+</script>
+
+
+  <script>
+
+    async function get_actual_friend(friend, current_username){
+    let friend_name;
+    if (friend.from_user_name === current_username) {
+        friend_name = friend.to_user_name;
+      } else {
+        friend_name = friend.from_user_name;
+      }
+
+      return friend_name;
+    }
+
+
+    async function get_chatroom_id(friend, real_friend_name){
+        const user_token = await window.api.getUserToken();
+
+
+        try {
+        const response = await fetch(`${window.API_URL}/handle_chatroom/`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                "Authorization": `Token ${user_token}` 
+            },
+            body: JSON.stringify({ "user_to_chat" :  real_friend_name})
+            });
+
+
+        if(!response.ok){
+            return null;
+        }
+
+        const data = await response.json();
+        return data.chatroom_id;
+
+      } catch (error) {
+        //console.error('Error fetching pending friends:', error);
+      }
+    }
+
+
+
+    async function get_public_key(friend, real_friend_name){
+        const user_token = await window.api.getUserToken();
+
+        try {
+        const response = await fetch(`${window.API_URL}/get_public/`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                "Authorization": `Token ${user_token}` 
+            },
+            body: JSON.stringify({ "get_username" :  real_friend_name})
+            });
+
+
+        if(!response.ok){
+            return null;
+        }
+
+        const data = await response.json();
+        return data.public_key;
+
+      } catch (error) {
+        //console.error('Error fetching public_key:', error);
+      }
+    }
+
+    async function get_user_SK(real_friend_name){
+        const user_token = await window.api.getUserToken();
+
+        try {
+        const response = await fetch(`${window.API_URL}/get_user_SK/`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                "Authorization": `Token ${user_token}` 
+            },
+            body: JSON.stringify({ "friend_username" :  real_friend_name})
+            });
+
+
+        if(!response.ok){
+            return null;
+        }
+
+        const data = await response.json();
+        if (data.sk){
+            const my_private = await window.api.getUserPrivate();
+            const decryptedSk = await window.api.decryptMessage(data.sk, my_private)
+            const skArray = decryptedSk.split(',').map(Number);
+            const skBuffer = await window.api.convertSkToBuffer(skArray) // need to convert it to bytes so it can be used in enc/dec operations
+            return skBuffer;
+        }
+        return null;
+
+      } catch (error) {
+        //console.error('Error fetching user SK:', error);
+      }
+    }
+
+
+
+
+
+    async function handle_chat(friend, real_friend_name){
+
+        const chatroom_id = await get_chatroom_id(friend, real_friend_name);
+        const friend_public_key = await get_public_key(friend, real_friend_name);
+        const sk = await get_user_SK(real_friend_name);
+        
+        
+        
+
+
+
+        if (chatroom_id !== null && friend_public_key !== null && sk !== null){
+            window.api.openChatroomWindow(friend, real_friend_name, chatroom_id, friend_public_key, sk);
+            window.close();
+            return;
+        }
+        // open new window of chat 
+        const user_token = await window.api.getUserToken();
+       
+            
+            const socket = new WebSocket(`${window.WS_URL}/chat/${chatroom_id}/?token=${user_token}`);
+            
+            socket.addEventListener('open', (event) => {
+            //console.log('Connected to WebSocket server');
+            });
+
+
+    }
+
+   
+    async function loadCurrentFriends() {
+        const user_token = await window.api.getUserToken();
+        const current_username = await window.api.getUserName();
+
+
+      try {
+        const response = await fetch(`${window.API_URL}/get_friends/`, {
+        method: 'GET',
+        headers: { 
+            'Content-Type': 'application/json', 
+            "Authorization": `Token ${user_token}` 
+        },
+        });
+
+
+        if(!response.ok){
+            return;
+        }
+
+        const friends = await response.json();
+
+
+        const container = document.getElementById('friendsContainer');
+        container.innerHTML = ''; // Clear the container before adding friends
+
+        for (const friend of friends) {
+          const real_friend_name = await get_actual_friend(friend, current_username);
+
+          const friendDiv = document.createElement('div');
+          friendDiv.className = 'friend';
+          
+          const friendName = document.createElement('span');
+          friendName.textContent = real_friend_name; // Display the actual friend's name
+          
+    // Could add more feateures remove, view public key, etc.
+
+          const buttonDiv = document.createElement('div');
+
+          const chatButton = document.createElement('button');
+          chatButton.textContent = 'Chat';
+          chatButton.className = 'chat';
+          chatButton.dataset.friendId = friend.id; 
+          chatButton.onclick = () => handle_chat(friend, real_friend_name); 
+
+
+        //   const rejectButton = document.createElement('button');
+        //   rejectButton.textContent = 'Reject';
+        //   rejectButton.className = 'reject';
+        //   rejectButton.dataset.friendId = friend.id; // Assuming friend has an id property
+
+          buttonDiv.appendChild(chatButton);
+        //   buttonDiv.appendChild(rejectButton);
+
+          friendDiv.appendChild(friendName);
+          friendDiv.appendChild(buttonDiv);
+
+          container.appendChild(friendDiv);
+        }
+
+      } catch (error) {
+        //console.error('Error fetching pending friends:', error);
+      }
+    }
+
+    window.onload = loadCurrentFriends;
+  </script>
+</body>
+</html>

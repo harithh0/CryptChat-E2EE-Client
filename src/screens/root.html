@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OnionChat</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0; 
+      font-family: Arial, sans-serif; 
+    }
+    h2 {
+      margin-top: 20px 0; 
+      color: #333; 
+    }
+    img {
+      width: 120px; 
+      height: auto; 
+    }
+    .button {
+      background-color: #007BFF; 
+      color: white; 
+      border: none; 
+      border-radius: 5px; 
+      padding: 10px 20px; 
+      margin: 5px;
+      cursor: pointer; 
+      font-size: 16px; 
+      transition: background-color 0.3s;
+    }
+    .button:hover {
+      background-color: #0056b3; 
+    }
+  </style>
+</head>
+<body>
+  <h2 id="username">Loading username...</h2>
+  <img src="../assets/images/profile.png" alt="Profile Picture" />
+  
+  <div>
+    <button class="button" id="addFriendButton">Add Friend +</button>
+    <button class="button" id="viewPendingRequestsButton">View Pending Friend Requests</button>
+    <button class="button" id="viewFriendsButton">View Friends</button>
+  </div>
+  
+  <script>
+
+
+    window.api.getUserName().then(username => {
+      document.getElementById('username').textContent = username ? `Hello, ${username}` : 'Username not found';
+    }).catch(error => {
+      //console.error('Error getting username:', error);
+      document.getElementById('username').textContent = 'Error loading username';
+    });
+    
+    document.getElementById('addFriendButton').addEventListener('click', () => {
+      //console.log('Add Friend button clicked');
+    });
+
+    document.getElementById('viewPendingRequestsButton').addEventListener('click', () => {
+      //console.log('View Pending Friend Requests button clicked');
+    });
+
+    document.getElementById('viewFriendsButton').addEventListener('click', () => {
+      //console.log('View Friends button clicked');
+    });
+
+      document.getElementById('addFriendButton').addEventListener('click', () => {
+        window.api.openAddFriendWindow();
+      });
+
+      document.getElementById('viewPendingRequestsButton').addEventListener('click', () => {
+        window.api.openViewPendingFriendsWindow();
+      });
+
+      document.getElementById('viewFriendsButton').addEventListener('click', () => {
+        window.api.openViewFriendsWindow();
+      });
+      
+
+      
+  </script>
+
+</body>
+</html>
