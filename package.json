@@ -1,6 +1,6 @@
 {
-  "name": "OnionChat",
-  "productName": "OnionChat",
+  "name": "CryptChat",
+  "productName": "CryptChat",
   "version": "1.0.0",
   "description": "End-to-end encrypted chat application, with routing through TOR network",
   "main": "src/index.js",
@@ -13,7 +13,7 @@
     "build": "electron-builder"
   },
   "build": {
-    "appId": "com.onionchat.id",
+    "appId": "com.cryptchat.id",
     "files": [
       "src/**/*",
       "resources/**/*",
@@ -61,6 +61,7 @@
     "electron-store": "^10.0.0",
     "node-forge": "^1.3.1",
     "socks-proxy-agent": "^8.0.4",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "tor-request": "^3.1.0"
   }
 }

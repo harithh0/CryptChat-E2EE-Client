@@ -32,3 +32,9 @@ CryptChat is a secure messaging app that uses asymmetric encryption for private 
     - After accepting friend request, users can now communicate to each other.
     - When a user sends a message or file it will encrypt it using the symmetric key, so only the recipient with the same symmetric key could decrypt and view the message or file.
 
+
+
+
+<!-- Server application code could be found [here](). -->
+
+
